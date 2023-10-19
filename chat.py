@@ -8,9 +8,6 @@ from nltk_utils import bag_of_words, tokenize
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-with open('intents.json', 'r') as json_data:
-    intents = json.load(json_data)
-
 FILE = "data.pth"
 data = torch.load(FILE)
 
@@ -28,6 +25,8 @@ model.eval()
 bot_name = "Sam"
 
 def get_response(msg):
+    with open('intents.json', 'r') as json_data:
+         intents = json.load(json_data)
     sentence = tokenize(msg)
     X = bag_of_words(sentence, all_words)
     X = X.reshape(1, X.shape[0])
