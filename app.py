@@ -1,9 +1,19 @@
 from flask import Flask, render_template,request,jsonify
 
 from chat import get_response
+from flask_cors import CORS
 
 app=Flask(__name__)
+app.config.from_object('config')  # Import things from config
 
+ CORS(app)
+
+# CORS Headers 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,true')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 @app.get("/")
 
