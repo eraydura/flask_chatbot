@@ -2,6 +2,8 @@ from flask import Flask, render_template,request,jsonify
 
 from chat import get_response
 from flask_cors import CORS
+import os 
+os.system('python3 train.py')
 
 app=Flask(__name__)
 
