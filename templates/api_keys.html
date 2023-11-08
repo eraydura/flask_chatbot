@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Key Management</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-info">
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <br><br>
+        <button id="generateKey" class="btn btn-primary">Generate API Key</button>
+        <br><br><br>
+        <h2>API Keys List</h2>
+        {% if api_keys %}
+            <ul id="apiKeysList" class="list-group">
+                {% for apikey in api_keys %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center"> 
+                        {{ apikey.key }} 
+                        <button class="btn btn-danger btn-sm" onclick="deleteApiKey(this, '{{ apikey.key  }}')">Delete</button>
+                        <button class="btn btn-danger btn-sm" onclick="createApiKey('{{ apikey.key  }}')">Create ChatBot</button>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <!-- Include Bootstrap and JavaScript dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // JavaScript code for API Key management
+        document.getElementById('generateKey').addEventListener('click', () => {
+            // Generate the API key on the client side
+            const generatedKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+            // Create an object with the API key
+            const apiKeyData = { api_key: generatedKey };
+            
+            // Send a POST request to the server to generate the API key
+            fetch('/generate_api_key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiKeyData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response from the server
+                if (data.success) {
+                    // API key generation was successful
+                    const apiKey = data.api_key;
+                    addApiKeyToList(apiKey);
+                } else {
+                    // Handle the case where API key generation failed
+                    alert('API key generation failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error generating API key:', error);
+            });
+        });
+
+        // Function to add an API key to the list
+        function addApiKeyToList(apiKey) {
+            const apiKeysList = document.getElementById('apiKeysList');
+
+            // Create a list item with a "Delete" button
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+            listItem.innerHTML = `
+                ${apiKey}
+                <button class="btn btn-danger btn-sm" onclick="deleteApiKey(this, '${apiKey}')">Delete</button>
+                <button class="btn btn-danger btn-sm" onclick="createApiKey('${apiKey}')">Create ChatBot</button>
+             `;
+
+            apiKeysList.appendChild(listItem);
+        }
+
+        // Function to delete an API key from the list
+        function deleteApiKey(buttonElement, apiKey) {
+            const listItem = buttonElement.parentElement;
+
+            // Send a request to delete the API key from the server
+            fetch('/delete_api_key/' + apiKey, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response from the server
+                if (data.success) {
+                    // API key deletion was successful
+                    listItem.remove();
+                } else {
+                    // Handle the case where API key deletion failed
+                    alert('API key deletion failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting API key:', error);
+            });
+        }
+
+        // Function to create a chatbot using the API key
+        function createApiKey(apiKey) {
+            var urlPath = "/create_tag?apikey=" + apiKey;           
+            window.location.href = urlPath;
+        }
+    </script>
+</body>
+</html>
