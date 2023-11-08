@@ -56,7 +56,7 @@ class Chatbox {
             let msg1 = { name: "User", message: text1 };
             this.messages.push(msg1);
         
-            fetch('https://eraydura.onrender.com/predict?apikey=' + apiKey + '&userid=' + userId, {
+            fetch('/predict?apikey=' + apiKey + '&userid=' + userId, {
                 method: 'POST',
                 body: JSON.stringify({ message: text1 }),
                 mode: 'cors',
