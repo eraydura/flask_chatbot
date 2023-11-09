@@ -5,185 +5,185 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Include jQuery -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script> <!-- Bootstrap JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
     <title>Create Tag</title>
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Create a New Tag</h1>
         <!-- Display any flash messages -->
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <ul>
-            {% for message in messages %}
-            <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
+        <div class="alert alert-info">
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
         {% endif %}
         {% endwith %}
         <form>
             <div class="form-group">
                 <label for="tag">Tag:</label>
-                <input type="text" class="form-control" name="tag" required>
+                <input type="text" class="form-control" name="tag" id="tag" required>
             </div>
             <div class="form-group">
                 <label for="patterns">Patterns (comma-separated):</label>
-                <input type="text" class="form-control" name="patterns" required>
+                <input type="text" class="form-control" name="patterns" id="patterns" required>
             </div>
             <div class="form-group">
                 <label for="responses">Responses (comma-separated):</label>
-                <input type="text" class="form-control" name="responses" required>
+                <input type="text" class="form-control" name="responses" id="responses" required>
             </div>
-            </form>
-        </br>
-            <button type="button" class="btn btn-primary" onclick="createTag()">Create Tag</button>
         </form>
-    </br></br>
-        <div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="updateModalLabel">Update Tag</h5>
-                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <form id="updateForm">
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="updateTag">Tag:</label>
-                                <input type="text" class="form-control" name="updateTag" id="updateTag" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="updatePatterns">Patterns (comma-separated):</label>
-                                <input type="text" class="form-control" name="updatePatterns" id="updatePatterns" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="updateResponses">Responses (comma-separated):</label>
-                                <input type="text" class="form-control" name="updateResponses" id="updateResponses" required>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-primary" id="updateButton">Update Tag</button>
-                        </div>
-                    </form>
+        <br>
+        <button type="button" class="btn btn-primary" onclick="createTag()">Create Tag</button>
+    </div>
+    <br><br>
+    <div class="container mt-4">
+   {% if tags %}
+        {% if tags|length > 2 %}
+            <button type="button" class="btn btn-success" onclick="trainModel()">Train Model</button>
+        {% else %}
+            <p>Not enough tags available. Add more tags to train the model.</p>
+        {% endif %}
+    {% else %}
+        <p>No tags available. Add tags to train the model.</p>
+    {% endif %}
+    <br>    </br>
+    <ul class="list-group">
+        {% for tag in tags %}
+        <li class="list-group-item" data-tag="{{ tag.tag_name }}" data-patterns="{{ tag.pattern }}" data-responses="{{ tag.response }}">
+            <div class="row">
+                <div class="col">{{ tag.tag_name }}</div>
+                <div class="col">{{ tag.pattern }}</div>
+                <div class="col">{{ tag.response }}</div>
+                <div class="col text-right">
+                    <button type="button" class="btn btn-danger" onclick="deleteTag('{{ tag.tag_name }}')">Delete</button>
+                    <br><br>
+                    <button type="button" class="btn btn-primary" onclick="openUpdateModal( {{ loop.index-1  }}, '{{ tag.tag_name }}', '{{ tag.pattern }}', '{{ tag.response }}')">Update</button>
                 </div>
             </div>
-        </div>
-        <div class="container mt-4">
-            <h1>Train</h1>
-            {% if data.intents %}
-                <button type="button" class="btn btn-success" onclick="trainModel()">Train Model</button>
-            {% else %}
-                <p>No tags available. Add tags to train the model.</p>
-            {% endif %}
-        </div>
-        <ul class="list-group">
-            {% for intent in data.intents %}
-                <li class="list-group-item">
-                    <div class="row">
-                        <div class="col">{{ intent.tag }}</div>
-                        <div class="col">{{ intent.patterns }}</div>
-                        <div class="col">{{ intent.responses }}</div>
-                        <div class="col text-right">
-                            <button type="button" class="btn btn-danger" onclick="deleteTag('{{ intent.tag }}')">Delete</button>
-                            </br></br>
-                            <button type="button" class="btn btn-primary" onclick="openUpdateModal('{{ intent.tag }}', '{{ intent.patterns|join(', ') }}','{{ intent.responses|join(', ') }}')">Update</button>
+        </li>
+    {% endfor %}
+    
+    </ul>
+</div>
+    <div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateModalLabel">Update Tag</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="updateForm">
+                    <div class="modal-body">
+                        <div class="form-group" id="number" style="visibility: hidden;">
+                            
+                        </div>
+                        <div class="form-group">
+                            <label for="updateTag">Tag:</label>
+                            <input type="text" class="form-control" name="updateTag" id="updateTag" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="updatePatterns">Patterns (comma-separated):</label>
+                            <input type="text" class="form-control" name="updatePatterns" id="updatePatterns" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="updateResponses">Responses (comma-separated):</label>
+                            <input type="text" class="form-control" name="updateResponses" id="updateResponses" required>
                         </div>
                     </div>
-                </li>
-            {% endfor %}
-        </ul>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="updateButton">Update Tag</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     <script>
-            const queryString = window.location.search;
-            const urlParams = new URLSearchParams(queryString);
-            const apikey = urlParams.get('apikey')
-            console.log(apikey);
-            function openUpdateModal(tag, patterns, responses) {
-                // Pre-fill the modal form with the existing data
-                document.getElementById('updateTag').value = tag;
-                document.getElementById('updatePatterns').value = patterns.toString();
-                document.getElementById('updateResponses').value = responses.toString();
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const apikey = urlParams.get('apikey');
 
-                // Show the modal
-                console.log("Opening modal");  // Add this line for debugging
-                $('#updateModal').modal('show');
-            }
+        function openUpdateModal(number,tag, patterns, responses) {
+            // Pre-fill the modal form with the existing data
+            document.getElementById('number').value = number;
+            document.getElementById('updateTag').value = tag;
+            document.getElementById('updatePatterns').value = patterns;
+            document.getElementById('updateResponses').value = responses;
 
-            document.querySelectorAll('.edit-button').forEach(button => {
-                button.addEventListener('click', function() {
-                    // Extract data from the list item
-                    const listItem = this.closest('li');
-                    const tag = listItem.getAttribute('data-tag');
-                    const patterns = listItem.getAttribute('data-patterns');
-                    const responses = listItem.getAttribute('data-responses');
+            // Show the modal
+            console.log("Opening modal");
+            $('#updateModal').modal('show');
+        }
 
-                    openUpdateModal(tag, patterns, responses);
-                });
-            });
-
-            document.getElementById('updateButton').addEventListener('click', function() {
-                // Get updated data from the modal form
-                const updatedTag = document.getElementById('updateTag').value;
-                const updatedPatterns = document.getElementById('updatePatterns').value;
-                const updatedResponses = document.getElementById('updateResponses').value;
-
-                // Prepare data as JSON
-                const data = {
-                    tag: updatedTag,
-                    patterns: updatedPatterns,
-                    responses: updatedResponses
-                };
-
-                fetch('/update_value/' + updatedTag, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'API-Key': apikey // Replace with your actual API key
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) {
-                        // Handle success
-                        alert(data.message);
-                        location.reload(); // Refresh the page
-                    } else if (data.error) {
-                        // Handle error
-                        alert(data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert('An error occurred while trying to update the tag.');
-                });
-
-                // Hide the modal
-                $('#updateModal').modal('hide');
-            });
-        function createTag() {
-            let tag = document.querySelector('input[name="tag"]').value;
-            let patterns = document.querySelector('input[name="patterns"]').value;
-            let responses = document.querySelector('input[name="responses"]').value;
+        document.getElementById('updateButton').addEventListener('click', function() {
+            // Get updated data from the modal form
+            const id = document.getElementById('number').value;
+            const updatedTag = document.getElementById('updateTag').value;
+            const updatedPatterns = document.getElementById('updatePatterns').value;
+            const updatedResponses = document.getElementById('updateResponses').value;
 
             // Prepare data as JSON
             const data = {
-                tag: tag,
-                patterns: patterns,
-                responses: responses
+                tag_name: updatedTag,
+                pattern: updatedPatterns,
+                response: updatedResponses
+            };
+
+            // Send a POST request to the server
+            fetch(`/update_tag/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'API-Key': apikey
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    // Handle success
+                    alert(data.message);
+                    location.reload(); // Refresh the page
+                } else if (data.error) {
+                    // Handle error
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert('An error occurred while trying to update the tag.');
+            });
+
+            // Hide the modal
+            $('#updateModal').modal('hide');
+        });
+
+
+
+        function createTag() {
+            let tag = document.getElementById('tag').value;
+            let patterns = document.getElementById('patterns').value;
+            let responses = document.getElementById('responses').value;
+
+            // Prepare data as JSON
+            const data = {
+                tag_name: tag,
+                pattern: patterns,
+                response: responses
             };
 
             fetch('/create_tag', {
                 method: 'POST',
-                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
-                    'API-Key': apikey  // Replace with your actual API key
+                    'API-Key': apikey
                 },
                 body: JSON.stringify(data)
             })
@@ -208,11 +208,10 @@
             if (confirm("Are you sure you want to delete this tag?")) {
                 fetch(`/delete_value/${tag}`, { 
                     method: 'DELETE',
-                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
-                        'API-Key': apikey  // Replace with your actual API key
-                    },
+                        'API-Key': apikey
+                    }
                  })
                     .then(response => response.json())
                     .then(data => {
@@ -231,11 +230,10 @@
                     });
             }
         }
+
         function trainModel() {
-            // You can call your "/train" route to initiate the training process
             fetch('/train', {
                 method: 'GET',
-                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                     'API-Key': apikey

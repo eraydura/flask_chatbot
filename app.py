@@ -4,9 +4,9 @@ from flask_bcrypt import Bcrypt
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
+from sqlalchemy.exc import IntegrityError
 from chat import get_response
-import os
-import create_tags
+from train import train_model
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -23,6 +23,14 @@ class ApiKey(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(64), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    tags = db.relationship('Tag', backref='api_key', lazy=True)
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tag_name = db.Column(db.String(50), unique=True, nullable=False)
+    pattern = db.Column(db.String(200), nullable=False)
+    response = db.Column(db.String(200), nullable=False)
+    api_key_id = db.Column(db.Integer, db.ForeignKey('api_key.id'))
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -77,23 +85,6 @@ def logout():
 @app.route('/')
 def index():
     return render_template('base.html')
-
-@app.route('/delete_value/<tag>', methods=['DELETE'])
-def delete_value(tag):
-    api_key = request.headers.get('API-Key')
-    if 'user_id' in session:
-        user_id = session['user_id']
-        user = User.query.get(user_id)
-        if user:
-            api_key_obj = ApiKey.query.filter_by(key=api_key, user_id=user_id).first()
-            if api_key_obj:
-                result = create_tags.delete_value(tag)
-                return result
-            else:
-                flash('Invalid API key or user', 'error')
-    else:
-        flash('Please log in to delete values', 'error')
-        return redirect(url_for('login'))
 
 @app.route('/api_key_management')
 def api_key_management():
@@ -159,20 +150,56 @@ def delete_api_key(key_id):
 @app.route('/create_tag')
 def display_items():
     apikey = request.args.get('apikey')
+    
     if 'user_id' in session:
         user_id = session['user_id']
         user = User.query.get(user_id)
+        
         if user:
             api_key_obj = ApiKey.query.filter_by(key=apikey, user_id=user_id).first()
+            
             if api_key_obj:
-                result = create_tags.display_items()
-                return result
+                tags = Tag.query.filter_by(api_key_id=api_key_obj.id).all()
+                
+                return render_template('Creating_tags.html', tags=tags)
             else:
                 flash('Invalid API key or user', 'error')
                 return redirect(url_for('login'))
         else:
             flash('Please log in to create tags', 'error')
             return redirect(url_for('login'))
+    else:
+        flash('You must be logged in to access this page.', 'error')
+        return redirect(url_for('login'))
+
+@app.route('/delete_value/<tag>', methods=['DELETE'])
+def delete_value(tag):
+    api_key = request.headers.get('API-Key')
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = User.query.get(user_id)
+        if user:
+            api_key_obj = ApiKey.query.filter_by(key=api_key, user_id=user_id).first()
+            if api_key_obj:
+                tag_to_delete = Tag.query.filter_by(tag_name=tag, api_key_id=api_key_obj.id).first()
+                if tag_to_delete:
+                    try:
+                        db.session.delete(tag_to_delete)
+                        db.session.commit()
+                        flash(f'Value for tag "{tag}" deleted successfully', 'success')
+                        return jsonify({'message': f'Value for tag "{tag}" deleted successfully'})
+                    except IntegrityError:
+                        db.session.rollback()
+                        flash('Error deleting tag value', 'error')
+                        return jsonify({'error': 'Error deleting tag value'})
+                else:
+                    flash(f'Tag "{tag}" not found', 'error')
+                    return jsonify({'error': f'Tag "{tag}" not found'})
+            else:
+                flash('Invalid API key or user', 'error')
+    else:
+        flash('Please log in to delete values', 'error')
+        return redirect(url_for('login'))
 
 @app.route('/create_tag', methods=['POST'])
 def create_tag():
@@ -183,31 +210,71 @@ def create_tag():
         if user:
             api_key_obj = ApiKey.query.filter_by(key=api_key, user_id=user_id).first()
             if api_key_obj:
-               print(api_key_obj)
-               result = create_tags.create_tag()
-               return result
-            else:
-              flash('Invalid API key or user', 'error')
+                if request.method == 'POST':
+                    tag_name = request.json.get('tag_name')
+                    pattern = request.json.get('pattern')
+                    response = request.json.get('response')
+
+                    new_tag = Tag(tag_name=tag_name, pattern=pattern, response=response, api_key_id=api_key_obj.id)
+
+                    try:
+                        db.session.add(new_tag)
+                        db.session.commit()
+                        flash('New tag created successfully', 'success')
+                        return jsonify({'message': 'New tag created successfully'})
+                    except IntegrityError:
+                        db.session.rollback()
+                        flash('Error creating new tag', 'error')
+                        return jsonify({'error': 'Error creating new tag'})
+                else:
+                    flash('Invalid API key or user', 'error')
     else:
         flash('Please log in to create tags', 'error')
     return redirect(url_for('login'))
 
-@app.route('/update_value/<tag>', methods=['GET', 'POST'])
-def update_value(tag):
+@app.route('/update_tag/<int:tag_id>', methods=['POST'])
+def update_tag(tag_id):
     api_key = request.headers.get('API-Key')
+
     if 'user_id' in session:
         user_id = session['user_id']
         user = User.query.get(user_id)
+
         if user:
             api_key_obj = ApiKey.query.filter_by(key=api_key, user_id=user_id).first()
+
             if api_key_obj:
-               result = create_tags.update_value(tag)
-               return result
+                tag_to_update = Tag.query.filter_by(api_key_id=api_key_obj.id)
+                tag_to_update=tag_to_update[tag_id]
+                print(tag_to_update.tag_name)
+                if tag_to_update is None:
+                    flash(f'Tag with ID "{tag_id}" not found', 'error')
+                    return jsonify({'error': f'Tag with ID "{tag_id}" not found'})
+
+                # Get the updated values from the JSON payload
+                new_tag_name = request.json.get('tag_name')
+                new_pattern = request.json.get('pattern')
+                new_response = request.json.get('response')
+
+                # Update the tag values
+                tag_to_update.tag_name = new_tag_name
+                tag_to_update.pattern = new_pattern
+                tag_to_update.response = new_response
+
+                try:
+                    db.session.commit()
+                    flash(f'Tag with ID "{tag_id}" updated successfully', 'success')
+                    return jsonify({'message': f'Tag with ID "{tag_id}" updated successfully'})
+                except IntegrityError:
+                    db.session.rollback()
+                    flash('Error updating tag. Integrity error.', 'error')
+                    return jsonify({'error': 'Error updating tag. Integrity error.'})
             else:
-              flash('Invalid API key or user', 'error')
+                flash('Invalid API key or user', 'error')
     else:
-        flash('Please log in to update values', 'error')
-    return redirect(url_for('login'))
+        flash('Please log in to update tags', 'error')
+
+    return jsonify({'error': 'Update operation failed'})
 
 @app.route('/train')
 def train():
@@ -218,7 +285,20 @@ def train():
         if user:
             api_key_obj = ApiKey.query.filter_by(key=api_key, user_id=user_id).first()
             if api_key_obj:
-              return os.system('python3 train.py')
+                tags = Tag.query.filter_by(api_key_id=api_key_obj.id).all()
+                intents = []
+                for tag in tags:
+                    intent = {
+                        "tag": tag.tag_name,
+                        "patterns": [pattern.strip() for pattern in tag.pattern.split(',')],
+                        "responses": [response.strip() for response in tag.response.split(',')]
+                    }
+                    intents.append(intent)
+                # Create a dictionary with a key named "intents"
+                json_data = {"intents": intents}
+
+                response = train_model(json_data)
+                return jsonify({'message': response})
             else:
               flash('Invalid API key or user', 'error')
     else:
@@ -234,7 +314,19 @@ def predict():
     apikey = ApiKey.query.filter_by(key=api_key,user_id=userid).first()
 
     if apikey:
-        response = get_response(text)
+
+        tags = Tag.query.filter_by(api_key_id=apikey.id).all()
+        
+        intents = []
+        for tag in tags:
+            intent = {
+                "tag": tag.tag_name,
+                "patterns": [pattern.strip() for pattern in tag.pattern.split(',')],
+                "responses": [response.strip() for response in tag.response.split(',')]
+            }
+            intents.append(intent)
+        response = get_response(text,intents)
+        print(response)
         message = {"answer": response}
     else:
         message = {"answer": "Invalid API key"}
