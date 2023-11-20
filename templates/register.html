@@ -1,38 +1,128 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Registration</title>
-    <!-- Add Bootstrap CSS link here -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            overflow-x: hidden;
+        }
+
+        #formContent {
+            background-color: white !important;
+            padding: 30px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            border-radius: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        @media (max-width: 768px) {
+            #formContent {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="display-4">Register</h1>
-        
-        <!-- Display flash messages with Bootstrap alert classes -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="alert alert-info">
-            <ul>
-                {% for message in messages %}
-                <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        {% endwith %}
+    <div id="navbar"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 offset-md-3 mt-5">
+                <div id="formContent">
+                    <h1 class="display-4">Register</h1>
 
-        <form method="POST">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                <input class="form-control" type="text" name="username" placeholder="Username" required>
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                    <div class="alert alert-info">
+                        <ul>
+                            {% for message in messages %}
+                            <li>{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="registrationForm">
+                        {{ form.hidden_tag() }}
+                        <div class="form-group">
+                            <input class="form-control" type="text" name="username" placeholder="Username" required>
+                        </div>
+                        <div class="form-group">
+                            <input class="form-control" type="email" name="email" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input class="form-control" type="text" name="company" placeholder="Company" required>
+                        </div>
+                        <div class="form-group">
+                            <input class="form-control" type="password" name="password" placeholder="Password" required>
+                        </div>
+                        <button class="btn btn-primary btn-lg btn-block" type="submit" id="registerBtn">Register</button>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <input class="form-control" type="password" name="password" placeholder="Password" required>
-            </div>
-            <button class="btn btn-primary" type="submit">Register</button>
-        </form>
+        </div>
     </div>
-    <!-- Add Bootstrap and JavaScript dependencies here if needed -->
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationModalLabel">Email Confirmation</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>An email with a confirmation link has been sent to your email address. Please check your inbox and click the link to confirm your registration.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#navbar").load("header", function(response, status, xhr) {
+                if (status == "error") {
+                    console.error("Error loading header.html:", xhr.status, xhr.statusText);
+                }
+            });
+
+            // Add an event listener for form submission
+            $("#registrationForm").submit(function(event) {
+                // Prevent the default form submission
+                event.preventDefault();
+
+                // Simulate form submission (you may need to adjust this based on your actual form submission logic)
+                $.ajax({
+                    type: "POST",
+                    url: "/register",
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        // Show the confirmation modal on successful registration
+                        $("#confirmationModal").modal("show");
+                    },
+                    error: function(error) {
+                        console.error("Error during registration:", error);
+                        // Handle registration error (e.g., display an error message)
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

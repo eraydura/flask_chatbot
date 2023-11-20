@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from nltk_utils import bag_of_words, tokenize, stem
 from model import NeuralNet
 
-def train_model(intent):
+def train_model(intent,FILE):
 
     # Extract patterns and tags from intents
     all_words = []
@@ -110,7 +110,6 @@ def train_model(intent):
         "tags": tags
     }
 
-    FILE = "data.pth"
     torch.save(data, FILE)
 
     return 'Training complete.'

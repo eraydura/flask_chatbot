@@ -6,6 +6,7 @@
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    <div id="navbar"></div>
     <div class="container mt-5">
         <!-- Flash messages -->
         {% with messages = get_flashed_messages() %}
@@ -24,8 +25,8 @@
         <button id="generateKey" class="btn btn-primary">Generate API Key</button>
         <br><br><br>
         <h2>API Keys List</h2>
-        {% if api_keys %}
             <ul id="apiKeysList" class="list-group">
+            {% if api_keys %}
                 {% for apikey in api_keys %}
                     <li class="list-group-item d-flex justify-content-between align-items-center"> 
                         {{ apikey.key }} 
@@ -33,16 +34,15 @@
                         <button class="btn btn-danger btn-sm" onclick="createApiKey('{{ apikey.key  }}')">Create ChatBot</button>
                     </li>
                 {% endfor %}
+            {% endif %}
             </ul>
-        {% endif %}
     </div>
 
     <!-- Include Bootstrap and JavaScript dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        // JavaScript code for API Key management
         document.getElementById('generateKey').addEventListener('click', () => {
             // Generate the API key on the client side
             const generatedKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -65,6 +65,10 @@
                     // API key generation was successful
                     const apiKey = data.api_key;
                     addApiKeyToList(apiKey);
+                    console.log('API key generated successfully:', apiKey);
+
+                    // Optionally, you can update other parts of the website here
+                    // For example, update the tag list or perform other actions
                 } else {
                     // Handle the case where API key generation failed
                     alert('API key generation failed');
@@ -86,7 +90,7 @@
                 ${apiKey}
                 <button class="btn btn-danger btn-sm" onclick="deleteApiKey(this, '${apiKey}')">Delete</button>
                 <button class="btn btn-danger btn-sm" onclick="createApiKey('${apiKey}')">Create ChatBot</button>
-             `;
+            `;
 
             apiKeysList.appendChild(listItem);
         }
@@ -117,9 +121,16 @@
 
         // Function to create a chatbot using the API key
         function createApiKey(apiKey) {
-            var urlPath = "/create_tag?apikey=" + apiKey;           
+            var urlPath = "/chatbot_features?apikey=" + apiKey;           
             window.location.href = urlPath;
         }
+        $(document).ready(function() {
+                $("#navbar").load("header", function(response, status, xhr) {
+                        if (status == "error") {
+                            console.error("Error loading header.html:", xhr.status, xhr.statusText);
+                        }
+                });
+            });
     </script>
 </body>
 </html>

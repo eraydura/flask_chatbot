@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Features</title>
+
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+
+        .slidecontainer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 30% !important; /* Added !important */
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #045aaa;
+            border-radius: 50% !important; /* Added !important */
+            box-shadow: 0px 2px 10px rgba(0, 0, 0, 1);
+        }
+    
+        .slidecontainer div {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            width: 100%;
+        }
+    
+        </style>
+</head>
+
+<body>
+    <div id="navbar"></div>
+    <div class="container mt-5">
+    </br>
+        <div class="slidecontainer">
+            <input type="range" min="1" max="100" value="0" class="slider" id="myRange">
+            <div> 
+                <a href="#" onclick="navigate('/chatbot_features?apikey=')">Features</a>
+                <a href="#" onclick="navigate('/create_tag?apikey=')">Tags & Response</a>
+                <a href="#" onclick="navigate('/generating?apikey=')">Generating</a>
+            </div>
+          </div>
+
+        </br></br>
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-info">
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        
+
+        <!-- Form for adding a new chatbot feature -->
+        <form id="addFeatureForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="color">Color:</label>
+                <input type="color" class="form-control" id="color" name="color" placeholder="Enter color" required>
+            </div>
+        </br>
+            <div class="form-group">
+                <label for="chatbotName">Chatbot Name:</label>
+                <input type="text" class="form-control" id="chatbotName" name="chatbotName"
+                    placeholder="Enter chatbot name" required>
+            </div>
+        </br>
+            <div class="form-group">
+                <label for="chatbotText">Chatbot Text:</label>
+                <input type="text" class="form-control" id="chatbotText" name="chatbotText"
+                    placeholder="Enter chatbot text" required>
+            </div>
+        </br>
+            <div class="form-group">
+                <label for="chatbotnotText">Chatbot Not Responding:</label>
+                <input type="text" class="form-control" id="chatbotnotText" name="chatbotnotText"
+                    placeholder="Enter chatbot not text" required>
+            </div>
+        </br>
+            <div class="form-group">
+                <label for="chatbotWrite">Chatbot Write:</label>
+                <input type="text" class="form-control" id="chatbotWrite" name="chatbotWrite"
+                    placeholder="Enter chatbot write" required>
+            </div>
+        </br>
+            <div class="form-group">
+                <label for="chatbotImage">Chatbot Image:</label>
+                <input type="file" class="form-control-file" id="chatbotImage" name="chatbotImage" accept="image/*"
+                    onchange="loadFile(event)">
+                <img id="output" width="300px" height="300px" />
+            </div>
+
+            <button type="button" class="btn btn-primary btn-lg btn-block" onclick="addChatbotFeature()">Add Feature</button>
+        </form>
+
+        <hr>
+
+        <!-- Modal for success message -->
+        <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="successModalLabel">Success</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div id="feature" class="modal-body">
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Script for handling AJAX requests and updating the saved values -->
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <script>
+
+                var query = window.location;
+                var url = new URL(query);
+                var apiKey = url.searchParams.get("apikey");
+                getChatbotFeatures(apiKey);
+                getChatbotImage(apiKey);
+
+                function navigate(url) {
+                    window.location.href = url+apiKey;
+                }
+            
+
+                function getChatbotImage(apiKey) {
+                    fetch('/get_chatbot_image?apikey=' + apiKey)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                console.error(data.error);
+                            } else {
+                                const imageBase64 = data.chatbot_image;
+                                console.log(imageBase64);
+                                const img = document.getElementById('output');
+                                document.getElementById('output').src = 'data:image/jpeg;base64,' + imageBase64;
+                            }
+                        })
+                        .catch(error => console.error('Error fetching image:', error));
+                }
+
+
+            function getChatbotFeatures(apiKey) {
+                fetch(`/get_chatbot_features?apikey=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            // Handle error
+                            console.error(data.error);
+                        } else {
+                            document.getElementById('color').value = data.chatbot_features[0].color || '';
+                            document.getElementById('chatbotName').value = data.chatbot_features[0].chatbot_name || '';
+                            document.getElementById('chatbotText').value = data.chatbot_features[0].chatbot_text || '';
+                            document.getElementById('chatbotnotText').value = data.chatbot_features[0].chatbot_nottext || '';
+                            document.getElementById('chatbotWrite').value = data.chatbot_features[0].chatbot_write || '';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching chatbot features:', error));
+            }
+
+            function addChatbotFeature() {
+                const color = document.getElementById('color').value;
+                const chatbotName = document.getElementById('chatbotName').value;
+                const chatbotText = document.getElementById('chatbotText').value;
+                const chatbotnotText = document.getElementById('chatbotnotText').value;
+                const chatbotwrite = document.getElementById('chatbotWrite').value;
+                const chatbotImage = document.getElementById('chatbotImage').files[0];
+
+                var query = window.location;
+                var url = new URL(query);
+                var apiKey = url.searchParams.get("apikey");
+
+                const formData = new FormData();
+                formData.append('color', color);
+                formData.append('chatbot_name', chatbotName);
+                formData.append('chatbot_nottext', chatbotnotText);
+                formData.append('chatbot_text', chatbotText);
+                formData.append('chatbot_write', chatbotwrite);
+
+                // Check if an image is selected
+                if (chatbotImage) {
+                    // Check image size (max 500MB)
+                    if (chatbotImage.size <= 500 * 1024 * 1024) {
+                        formData.append('chatbot_image', chatbotImage);
+                    } else {
+                        alert('Image size exceeds the maximum limit (500MB).');
+                        return;
+                    }
+                }
+
+                fetch(`/save_chatbot_feature?apikey=${apiKey}`, {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            getChatbotFeatures(apiKey);
+
+                            document.getElementById("feature").innerHTML = "Feature added successfully!";
+                            $('#successModal').modal('show');
+                        } else if (data.error) {
+                            document.getElementById("feature").innerHTML = data.error;
+                            $('#successModal').modal('show');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            var loadFile = function (event) {
+                var output = document.getElementById('output');
+                output.src = URL.createObjectURL(event.target.files[0]);
+                output.onload = function () {
+                    URL.revokeObjectURL(output.src);
+                }
+            };
+            $(document).ready(function() {
+                $("#navbar").load("header", function(response, status, xhr) {
+                        if (status == "error") {
+                            console.error("Error loading header.html:", xhr.status, xhr.statusText);
+                        }
+                });
+            });
+
+            document.getElementById("myRange").disabled = true;
+        </script>
+
+    </div>
+
+
+
+</body>
+
+</html>

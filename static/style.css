@@ -19,8 +19,6 @@ body {
     --primary: #581B98;
 }
 
-/* CHATBOX
-=============== */
 .chatbox {
     position: absolute;
     bottom: 30px;

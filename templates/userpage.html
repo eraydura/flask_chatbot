@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Information</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sofia">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="navbar"></div>
+    <div class="container mt-5">
+
+        <!-- Circular user image at the top -->
+        <div class="row justify-content-center align-items-center">
+            <div class="col-md-6 text-center">
+                <!-- Your content goes here -->
+                <div class="position-relative">
+                    {% if user_image %}
+                    <img src="data:image/png;base64, {{ user_image }}" alt="User" width="150" height="150"
+                        class="rounded-circle">
+                    {% else %}
+                    <img
+                        src="/static/default.jpg"
+                        alt="Default" width="150" height="150" class="rounded-circle">
+                    {% endif %}
+                    <button type="button" class="btn btn-primary btn-sm position-absolute" style="left: 325px; bottom: 5px;"
+                        data-toggle="modal" data-target="#updateUserModal">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                </div>
+                <div style="font-weight: bold; font-size: 30px;">{{ user_info.username }}</div>
+                <div style="font-size: 15px;">{{ user_info.email }}</div>
+                <div style="font-size: 15px;">{{ user_info.company }}</div>
+            </div>
+        </div>
+        </br></br>
+
+        <div class="form-group">
+            {% if user_info %}
+            <div class="alert alert-info">
+                {{ user_info.offer }} Account
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Modal -->
+        <div class="modal" id="updateUserModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">Update User Information</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+        
+                    <!-- Modal Body -->
+                    <div class="modal-body">
+                        <!-- Form for updating user information -->
+                        <form id="updateUserForm" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <select class="form-control" id="updateField" onchange="handleFieldChange()">
+                                    <option value="" selected disabled hidden>Choose one to update</option>
+                                    <option value="username" >Username</option>
+                                    <option value="email">Email</option>
+                                    <option value="company">Company</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+        
+                            <!-- Fields for updating username, email, and company -->
+                            <div style="display: none;" class="form-group" id="updateUsernameField">
+                                <label for="newUsername">New Username:</label>
+                                <input type="text" class="form-control" id="newUsername" placeholder="{{ user_info.username }}">
+                            </div>
+        
+                            <div style="display: none;" class="form-group" id="updateEmailField">
+                                <label for="newEmail">New Email:</label>
+                                <input type="email" class="form-control" id="newEmail" placeholder="{{ user_info.email }}">
+                            </div>
+        
+                            <div style="display: none;" class="form-group" id="updateCompanyField">
+                                <label for="newCompany">New Company:</label>
+                                <input type="text" class="form-control" id="newCompany" placeholder="{{ user_info.company }}">
+                            </div>
+        
+                            <!-- Field for updating the image -->
+                            <div class="form-group" id="updateImageField" style="display: none;">
+                                <label for="newImage">New Image:</label>
+                                <input type="file" class="form-control-file" id="newImageInput">
+                                {% if user_info.user_image %}
+                                    <img src="{{ user_info.user_image }}" alt="User" width="50" height="50" id="currentImage"
+                                        class="rounded-circle mt-2">
+                                {% elif user_image %}
+                                    <img src="data:image/png;base64, {{ user_image }}" alt="User" width="50" height="50"
+                                        id="currentImage" class="rounded-circle mt-2">
+                                {% else %}
+                                    <img src="/static/default.jpg" alt="User" width="50" height="50" id="currentImage"
+                                        class="rounded-circle mt-2">
+                                {% endif %}
+                            </div>
+        
+                        </form>
+                    </div>
+        
+                    <!-- Modal Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="updateUser()">UPDATE USER</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+        
+                </div>
+            </div>
+        </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <!-- Add Bootstrap JS (jQuery is required for Bootstrap JS) -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <script>
+            
+            // Update the current user image preview when a new image is selected
+            document.getElementById('newImageInput').addEventListener('change', function () {
+                var fileInput = this;
+                var currentImage = document.getElementById('currentImage');
+    
+                if (fileInput.files && fileInput.files[0]) {
+                    var reader = new FileReader();
+    
+                    reader.onload = function (e) {
+                        currentImage.src = e.target.result;
+                    };
+    
+                    reader.readAsDataURL(fileInput.files[0]);
+                }
+            });
+    
+            // Use Bootstrap modal events to handle actions
+            $('#updateUserModal').on('show.bs.modal', function (event) {
+                // Clear the form fields and image preview when the modal is shown
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newCompany').value = '';
+                document.getElementById('newImageInput').value = '';
+                document.getElementById('currentImage').src = '';
+            });
+    
+            $('#updateUserModal').on('hidden.bs.modal', function (event) {
+                // Clear the form fields and image preview when the modal is hidden
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newCompany').value = '';
+                document.getElementById('newImageInput').value = '';
+                document.getElementById('currentImage').src = '';
+            });
+    
+            // Handle the update user button click
+            $('#updateUserBtn').click(function () {
+                updateUser();
+            });
+    
+            // JavaScript function to update user information
+            function updateUser() {
+                // Get new information from the form
+                var newUsername = document.getElementById('newUsername').value;
+                var newEmail = document.getElementById('newEmail').value;
+                var newCompany = document.getElementById('newCompany').value;
+    
+                // Get the selected image file
+                var newImageInput = document.getElementById('newImageInput');
+                var newImageFile = newImageInput.files[0];
+    
+                // Prepare form data for file upload
+                var formData = new FormData();
+                formData.append('username', newUsername);
+                formData.append('email', newEmail);
+                formData.append('company', newCompany);
+                formData.append('user_image', newImageFile); // Update the key to 'user_image'
+    
+                // Send the updated information to the server
+                fetch('/update_user', {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Display the server response
+                        console.log(data);
+                        // You can handle the response as needed, e.g., show a success message
+    
+                        // Close the modal after updating
+                        $('#updateUserModal').modal('hide');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Handle error if necessary
+                    });
+            }
+    
+            $(document).ready(function () {
+                $("#navbar").load("header", function (response, status, xhr) {
+                    if (status == "error") {
+                        console.error("Error loading header.html:", xhr.status, xhr.statusText);
+                    }
+                });
+            });
+            function handleFieldChange() {
+                var selectedField = document.getElementById('updateField').value;
+
+                // Hide all update fields
+                document.getElementById('updateUsernameField').style.display = 'none';
+                document.getElementById('updateEmailField').style.display = 'none';
+                document.getElementById('updateCompanyField').style.display = 'none';
+                document.getElementById('updateImageField').style.display = 'none';
+
+                // Show the selected update field
+                document.getElementById('update' + selectedField.charAt(0).toUpperCase() + selectedField.slice(1) + 'Field').style.display = 'block';
+            }
+        </script>
+    </body>
+    
+    </html>
+    
+</body>
+
+</html>
